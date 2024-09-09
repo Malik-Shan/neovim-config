@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -255,7 +255,20 @@ require('lazy').setup({
       },
     },
   },
-
+  {
+    'ThePrimeagen/harpoon',
+    branch = 'harpoon2',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+  },
+  {
+    -- Highlight, edit, and navigate code
+    'nvim-treesitter/nvim-treesitter',
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter-textobjects',
+      'windwp/nvim-ts-autotag',
+    },
+    build = ':TSUpdate',
+  },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -395,6 +408,38 @@ require('lazy').setup({
         },
       }
 
+      local harpoon = require 'harpoon'
+      -- REQUIRED
+      harpoon:setup()
+      -- REQUIRED
+      vim.keymap.set('n', '<leader>a', function()
+        harpoon:list():add()
+      end)
+      vim.keymap.set('n', '<C-e>', function()
+        harpoon.ui:toggle_quick_menu(harpoon:list())
+      end)
+
+      vim.keymap.set('n', '<C-h>', function()
+        harpoon:list():select(1)
+      end)
+      vim.keymap.set('n', '<C-t>', function()
+        harpoon:list():select(2)
+      end)
+      vim.keymap.set('n', '<C-n>', function()
+        harpoon:list():select(3)
+      end)
+      vim.keymap.set('n', '<C-s>', function()
+        harpoon:list():select(4)
+      end)
+
+      -- Toggle previous & next buffers stored within Harpoon list
+      vim.keymap.set('n', '<C-S-P>', function()
+        harpoon:list():prev()
+      end)
+      vim.keymap.set('n', '<C-S-N>', function()
+        harpoon:list():next()
+      end)
+
       -- Enable Telescope extensions if they are installed
       pcall(require('telescope').load_extension, 'fzf')
       pcall(require('telescope').load_extension, 'ui-select')
@@ -411,6 +456,7 @@ require('lazy').setup({
       vim.keymap.set('n', '<leader>sr', builtin.resume, { desc = '[S]earch [R]esume' })
       vim.keymap.set('n', '<leader>s.', builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set('n', '<leader><leader>', builtin.buffers, { desc = '[ ] Find existing buffers' })
+      vim.keymap.set('n', '<leader>pv', vim.cmd.Ex, { desc = 'Vim File Explorer' })
 
       -- Slightly advanced example of overriding default behavior and theme
       vim.keymap.set('n', '<leader>/', function()
@@ -703,16 +749,24 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
-
+  {
+    'NvChad/nvim-colorizer.lua',
+    opts = {
+      user_default_options = {
+        tailwind = true,
+      },
+    },
+  },
   { -- Autocompletion
     'hrsh7th/nvim-cmp',
     event = 'InsertEnter',
     dependencies = {
       -- Snippet Engine & its associated nvim-cmp source
+      { 'roobert/tailwindcss-colorizer-cmp.nvim', config = true },
       {
         'L3MON4D3/LuaSnip',
         build = (function()
@@ -736,6 +790,11 @@ require('lazy').setup({
           -- },
         },
       },
+      opts = function(_, opts)
+        opts.formating = {
+          format = require('tailwindcss-colorizer-cmp').formatter,
+        }
+      end,
       'saadparwaiz1/cmp_luasnip',
 
       -- Adds other completion capabilities.
@@ -823,22 +882,17 @@ require('lazy').setup({
       }
     end,
   },
-
-  { -- You can easily change to a different colorscheme.
-    -- Change the name of the colorscheme plugin below, and then
-    -- change the command in the config to whatever the name of that colorscheme is.
-    --
-    -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
-    priority = 1000, -- Make sure to load this before all the other start plugins.
-    init = function()
-      -- Load the colorscheme here.
-      -- Like many other themes, this one has different styles, and you could load
-      -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
-
-      -- You can configure highlights by doing something like:
-      vim.cmd.hi 'Comment gui=none'
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    opts = {}, -- this is equalent to setup({}) function
+  },
+  {
+    -- Theme inspired by Atom
+    'navarasu/onedark.nvim',
+    priority = 1000,
+    config = function()
+      vim.cmd.colorscheme 'onedark'
     end,
   },
 
@@ -888,8 +942,10 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'c', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'javascript', 'astro', 'typescript', 'css' },
       -- Autoinstall languages that are not installed
+      autotag = { enable = true },
+      autopair = { enable = true },
       auto_install = true,
       highlight = {
         enable = true,
@@ -907,7 +963,6 @@ require('lazy').setup({
     --    - Show your current context: https://github.com/nvim-treesitter/nvim-treesitter-context
     --    - Treesitter + textobjects: https://github.com/nvim-treesitter/nvim-treesitter-textobjects
   },
-
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
   -- place them in the correct locations.
